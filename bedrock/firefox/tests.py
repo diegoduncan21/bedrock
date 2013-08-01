@@ -11,6 +11,7 @@ from urlparse import parse_qsl, urlparse
 from django.conf import settings
 from django.test.client import Client
 from django.utils import simplejson
+from django.utils.unittest import skip
 
 from funfactory.urlresolvers import reverse
 from mock import ANY, call, Mock, patch
@@ -37,7 +38,6 @@ class TestInstallerHelp(TestCase):
         self.patcher = patch.dict('jingo.env.globals',
                                   download_firefox=self.button_mock)
         self.patcher.start()
-        self.client = Client()
         self.view_name = 'firefox.installer-help'
         with self.activate('en-US'):
             self.url = reverse(self.view_name)
@@ -173,7 +173,6 @@ class TestMobileDetails(TestCase):
 @patch.object(fx_views, 'firefox_details', firefox_details)
 class TestFirefoxAll(TestCase):
     def setUp(self):
-        self.client = Client()
         with self.activate('en-US'):
             self.url = reverse('firefox.all')
 
@@ -203,9 +202,6 @@ class TestFirefoxAll(TestCase):
 
 
 class TestFirefoxPartners(TestCase):
-    def setUp(self):
-        self.client = Client()
-
     @patch('bedrock.firefox.views.settings.DEBUG', True)
     def test_js_bundle_files_debug_true(self):
         """
@@ -322,6 +318,19 @@ class TestFirefoxPartners(TestCase):
         self.assertEqual(response.status_code, 403)
 
 
+class TestLoadDevices(TestCase):
+
+    def file(self):
+        # where should the test file go?
+        return 'TODO'
+
+    @skip('Please to write test')
+    def test_load_devices(self):
+        load_devices(self, self.file(), cacheDevices=False)
+
+        #todo
+
+
 @patch.object(fx_views, 'firefox_details', firefox_details)
 class FxVersionRedirectsMixin(object):
     def assert_ua_redirects_to(self, ua, url_name, status_code=301):
@@ -418,14 +427,12 @@ class FxVersionRedirectsMixin(object):
 
 class TestWhatsnewRedirect(FxVersionRedirectsMixin, TestCase):
     def setUp(self):
-        self.client = Client()
         with self.activate('en-US'):
             self.url = reverse('firefox.whatsnew', args=['13.0'])
 
 
 class TestFirstrunRedirect(FxVersionRedirectsMixin, TestCase):
     def setUp(self):
-        self.client = Client()
         with self.activate('en-US'):
             self.url = reverse('firefox.firstrun', args=['13.0'])
 
@@ -493,12 +500,63 @@ class TestFirstrunRedirect(FxVersionRedirectsMixin, TestCase):
             self.assertNotIn(expected, response.content)
 
 
+class FirefoxMainRedirect(FxVersionRedirectsMixin, TestCase):
+    def setUp(self):
+        self.url = reverse('firefox')
+
+    @patch.dict(product_details.firefox_versions,
+                LATEST_FIREFOX_VERSION='13.0.5')
+    def test_current_minor_version_firefox(self):
+        """
+        The current version of Firefox should be temporarily redirected to
+        /firefox/fx/ regardless of the minor version.
+        """
+        user_agent = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:13.0) '
+                      'Gecko/20100101 Firefox/13.0')
+        self.assert_ua_redirects_to(user_agent, 'firefox.fx', 302)
+
+    @patch.dict(product_details.firefox_versions,
+                LATEST_FIREFOX_VERSION='18.0')
+    def test_esr_firefox(self):
+        """
+        The ESR versions of Firefox should be temporarily redirected to
+        /firefox/fx/ regardless of the current version. At present they are
+        10.0.x and 17.0.x.
+        """
+        user_agent = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.12) '
+                      'Gecko/20111101 Firefox/10.0.12')
+        self.assert_ua_redirects_to(user_agent, 'firefox.fx', 302)
+
+        user_agent = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) '
+                      'Gecko/20100101 Firefox/17.0')
+        self.assert_ua_redirects_to(user_agent, 'firefox.fx', 302)
+
+    @patch.dict(product_details.firefox_versions,
+                LATEST_FIREFOX_VERSION='16.0')
+    def test_current_firefox(self):
+        """
+        The current version of Firefox should be temporarily redirected to
+        /firefox/fx/.
+        """
+        user_agent = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) '
+                      'Gecko/20100101 Firefox/16.0')
+        self.assert_ua_redirects_to(user_agent, 'firefox.fx', 302)
+
+    @patch.dict(product_details.firefox_versions,
+                LATEST_FIREFOX_VERSION='16.0')
+    def test_future_firefox(self):
+        """
+        Any newer versions of Firefox, including the Aurora and Beta channels,
+        should be temporarily redirected to /firefox/fx/.
+        """
+        user_agent = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:18.0) '
+                      'Gecko/20100101 Firefox/18.0')
+        self.assert_ua_redirects_to(user_agent, 'firefox.fx', 302)
+
+
 @patch.object(fx_views, 'firefox_details', firefox_details)
 @patch.object(fx_views, 'mobile_details', mobile_details)
 class TestNotesRedirects(TestCase):
-    def setUp(self):
-        self.client = Client()
-
     def _test(self, url_from, url_to):
         with self.activate('en-US'):
             url = '/en-US' + url_from
@@ -545,9 +603,6 @@ class TestNotesRedirects(TestCase):
 
 @patch.object(fx_views, 'firefox_details', firefox_details)
 class TestSysreqRedirect(TestCase):
-    def setUp(self):
-        self.client = Client()
-
     @patch.dict(product_details.firefox_versions,
                 LATEST_FIREFOX_VERSION='22.0')
     def test_release_version(self):

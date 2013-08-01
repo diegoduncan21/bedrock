@@ -2,35 +2,18 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from django.conf.urls import RegexURLPattern
-from django.test.client import RequestFactory
-from django.utils import unittest
+from django.conf import settings
+from django.test import TestCase
 
 from mock import patch
 from nose.tools import eq_, ok_
 
 from bedrock.redirects.util import redirect
 
-
-class TestRedirectUrlPattern(unittest.TestCase):
-    def setUp(self):
-        self.rf = RequestFactory()
-
-    def test_name(self):
-        """
-        Should return a RegexURLPattern with a matching name attribute
-        """
-        url_pattern = redirect(r'^the/dude$', 'abides', name='Lebowski')
-        ok_(isinstance(url_pattern, RegexURLPattern))
-        eq_(url_pattern.name, 'Lebowski')
-
-    def test_no_query(self):
-        """
-        Should return a 301 redirect
-        """
-        pattern, view = redirect(r'^the/dude$', 'abides')
-        request = self.rf.get('the/dude')
-        response = view(request)
+@patch.object(settings, 'ROOT_URLCONF', 'bedrock.redirects.tests.urls')
+class TestUrlPatterns(TestCase):
+    def test_redirect(self):
+        response = self.client.get('/en-US/gloubi-boulga/')
         eq_(response.status_code, 301)
         eq_(response['Location'], 'abides')
 

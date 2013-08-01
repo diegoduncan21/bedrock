@@ -11,7 +11,6 @@ from django.core import mail
 from django.core.cache import cache
 from django.core.urlresolvers import clear_url_caches
 from django.http import HttpRequest
-from django.test.client import Client
 
 from jingo import env
 from jinja2 import FileSystemLoader
@@ -39,7 +38,6 @@ TEMPLATE_DIRS = (os.path.join(ROOT, 'templates'),)
 class TestLangFilesActivation(TestCase):
     def setUp(self):
         clear_url_caches()
-        self.client = Client()
 
     @patch('lib.l10n_utils.settings.DEV', False)
     def test_lang_file_is_active(self):
@@ -102,7 +100,6 @@ class TestDotlang(TestCase):
     def setUp(self):
         cache.clear()
         clear_url_caches()
-        self.client = Client()
 
     def test_parse(self):
         path = os.path.join(ROOT, 'test.lang')
