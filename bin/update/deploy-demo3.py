@@ -38,10 +38,10 @@ def update_assets(ctx):
         ctx.local("LANG=en_US.UTF-8 python2.6 manage.py update_product_details")
 
 
-@task
-def database(ctx):
-    with ctx.lcd(settings.SRC_DIR):
-        ctx.local("python2.6 manage.py syncdb --noinput --migrate")
+#@task
+#def database(ctx):
+#    with ctx.lcd(settings.SRC_DIR):
+#        ctx.local("python2.6 manage.py syncdb --noinput --migrate")
 
 
 #@task
@@ -100,7 +100,7 @@ def pre_update(ctx, ref=settings.UPDATE_REF):
 def update(ctx):
     update_assets()
     update_locales()
-    database()
+    #database()
 
 
 @task
